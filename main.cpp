@@ -15,7 +15,8 @@
 #include <string>
 #include <sstream>
 
-namespace patch{
+namespace patch
+{
     template < typename T > std::string to_string( const T& n )
     {
         std::ostringstream stm ;
@@ -167,8 +168,8 @@ void binarizar(Mat &in, Mat& out){
 
   //morphologyEx(out,out,1,element);
 
-	std::vector<Mat> channels;
-	split(hsv,channels);
+	//std::vector<Mat> channels;
+	//split(hsv,channels);
 	//imshow("H",channels[0]);
 	//imshow("S",channels[1]);
 	//imshow("V",channels[2]);
@@ -204,7 +205,7 @@ int main( int argc, char** argv ){
     flip(frame, frame, 1);
 
 		cvtColor(frame,gray,CV_BGR2GRAY);
-
+    equalizeHist(gray, gray );
 
 		if( !face_cascade.load( "/home/jpeumesmo/Applications/OpenCV/opencv-3.1.0/data/haarcascades/haarcascade_frontalface_alt.xml" ) ){
       printf("--(!)Error loading\n");
@@ -218,6 +219,7 @@ int main( int argc, char** argv ){
 
 		numeroPessoas = faces.size();
 
+    aux = frame.clone();
 		binarizar(aux,bin);
 		blur( bin, blured, Size(7,7) );
 		imshow("Binaria",blured);
