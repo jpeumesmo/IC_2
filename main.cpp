@@ -8,6 +8,7 @@
 
 
 #include <opencv2/opencv.hpp>
+#include <opencv2/video/tracking.hpp>
 #include <iostream>
 #include <stdlib.h>
 #include <stdio.h>
@@ -44,20 +45,11 @@ String exec(const char* cmd) {
     return result;
 }
 
-int locate(String &buff){
+void locate(String &buff){
   std::string in;
   char aux[256];
-  //std::cout<<"teste f1" <<std::endl;
   in = exec("locate data/haarcascades/haarcascade_frontalface_alt.xml");
   buff = in;
-  //std::cout<<"teste f2" << std::endl;
-  //while(fgets(aux, sizeof(char), in)!=NULL){
-  //fgets(aux, sizeof(char), in);
-//}
-  //std::cout<<in;
-
-  //pclose(in);
-  return 0;
 }
 
 void TSL (Mat& in, Mat& out){
@@ -220,8 +212,11 @@ int main( int argc, char** argv ){
   String aux_string, localCascade;
 
 
+//  Ptr<Tracker> tracker = Tracker::create( "KCF" );
+
+
   //ACHA  PATH DO CASCADE
-  int valor = locate(aux_string);
+  locate(aux_string);
   localCascade = aux_string.substr (0, aux_string.length()-1 );
 
 	//INCIALIZA O DISPOSITIVO
