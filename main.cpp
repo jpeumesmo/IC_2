@@ -15,8 +15,7 @@
 #include <string>
 #include <sstream>
 
-namespace patch
-{
+namespace patch{
     template < typename T > std::string to_string( const T& n )
     {
         std::ostringstream stm ;
@@ -27,6 +26,39 @@ namespace patch
 
 using namespace cv;
 
+String exec(const char* cmd) {
+    char buffer[128];
+    std::string result = "";
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe) throw std::runtime_error("popen() failed!");
+    try {
+        while (!feof(pipe)) {
+            if (fgets(buffer, 128, pipe) != NULL)
+                result += buffer;
+        }
+    } catch (...) {
+        pclose(pipe);
+        throw;
+    }
+    pclose(pipe);
+    return result;
+}
+
+int locate(String &buff){
+  std::string in;
+  char aux[256];
+  //std::cout<<"teste f1" <<std::endl;
+  in = exec("locate data/haarcascades/haarcascade_frontalface_alt.xml");
+  buff = in;
+  //std::cout<<"teste f2" << std::endl;
+  //while(fgets(aux, sizeof(char), in)!=NULL){
+  //fgets(aux, sizeof(char), in);
+//}
+  //std::cout<<in;
+
+  //pclose(in);
+  return 0;
+}
 
 void TSL (Mat& in, Mat& out){
 
@@ -185,7 +217,12 @@ int main( int argc, char** argv ){
   Mat frame,gray,bin,aux,hsv,blured;
 	int cntr = 0;
   unsigned int numeroPessoas;
+  String aux_string, localCascade;
 
+
+  //ACHA  PATH DO CASCADE
+  int valor = locate(aux_string);
+  localCascade = aux_string.substr (0, aux_string.length()-1 );
 
 	//INCIALIZA O DISPOSITIVO
 	VideoCapture cap(0);
@@ -207,7 +244,12 @@ int main( int argc, char** argv ){
 		cvtColor(frame,gray,CV_BGR2GRAY);
     equalizeHist(gray, gray );
 
-		if( !face_cascade.load( "/home/jpeumesmo/Applications/OpenCV/opencv-3.1.0/data/haarcascades/haarcascade_frontalface_alt.xml" ) ){
+
+    /*if( !face_cascade.load( "/home/jpeumesmo/Applications/OpenCV/opencv-3.1.0/data/haarcascades/haarcascade_frontalface_alt.xml") ){
+      printf("--(!)Error loading\n");
+      return -1;
+    }*/
+    if( !face_cascade.load(localCascade) ){
       printf("--(!)Error loading\n");
       return -1;
     }
