@@ -8,7 +8,7 @@
 
 
 #include <opencv2/opencv.hpp>
-#include <opencv2/video/tracking.hpp>
+#include <opencv2/tracking.hpp>
 #include <iostream>
 #include <stdlib.h>
 #include <stdio.h>
@@ -212,7 +212,7 @@ int main( int argc, char** argv ){
   String aux_string, localCascade;
 
 
-//  Ptr<Tracker> tracker = Tracker::create( "KCF" );
+  Ptr<Tracker> tracker = Tracker::create( "MIL" );;
 
 
   //ACHA  PATH DO CASCADE
@@ -244,7 +244,7 @@ int main( int argc, char** argv ){
       printf("--(!)Error loading\n");
       return -1;
     }*/
-    if( !face_cascade.load(localCascade) ){
+    if( !face_cascade.load("haarcascade_frontalface_alt.xml") ){
       printf("--(!)Error loading\n");
       return -1;
     }
@@ -363,8 +363,8 @@ int main( int argc, char** argv ){
 		imshow("frame",frame);
 
 		cntr++;
-		imwrite("/home/jpeumesmo/workspace/Rosto/images/bin/"+patch::to_string(cntr)+".jpg",bin);
-		imwrite("/home/jpeumesmo/workspace/Rosto/images/frame/f"+patch::to_string(cntr)+".jpg",frame);
+	//	imwrite("/home/jpeumesmo/workspace/Rosto/images/bin/"+patch::to_string(cntr)+".jpg",bin);
+	//	imwrite("/home/jpeumesmo/workspace/Rosto/images/frame/f"+patch::to_string(cntr)+".jpg",frame);
 
 		if(waitKey(30) >= 0) break;//QUEBRA LACO PRINCIPAL
 	}
