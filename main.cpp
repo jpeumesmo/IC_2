@@ -199,6 +199,14 @@ void binarizar(Mat &in, Mat& out){
 	//imshow("V",channels[2]);
 }
 
+void tracking(Ptr<Tracker> trackerFace,Rect2d faceBox,Ptr<Tracker> trackerLeft,Rect2d leftBox,Ptr<Tracker> trackerRigth,Rect2d rigthBox ){
+
+  //bbox = boundingRect( Mat(contours[0]) );
+  //tracker->update(frame, bbox);
+  //rectangle(frame, bbox, azul, 2, 1 );
+
+}
+
 int main( int argc, char** argv ){
 
   //VARIAVEIS
@@ -212,9 +220,15 @@ int main( int argc, char** argv ){
   String aux_string, localCascade;
 
 
-  Ptr<Tracker> tracker = Tracker::create( "MIL" );;
-  Rect2d bbox;
-  tracker->init(frame, bbox);
+  Ptr<Tracker> trackerFace = Tracker::create( "MIL" );
+  Ptr<Tracker> trackerLeft = Tracker::create( "MIL" );
+  Ptr<Tracker> trackerRigth = Tracker::create( "MIL" );;
+
+  Rect2d faceBox,leftBox,rigthBox;
+
+  trackerFace->init(frame, faceBox);
+  trackerLeft->init(frame,leftBox);
+  trackerRigth->init(frame,rigthBox);
 
   //ACHA  PATH DO CASCADE
   locate(aux_string);
@@ -296,9 +310,6 @@ int main( int argc, char** argv ){
 
 			drawContours(frame,contours,0,verde,-1,8,hierarchy);
 			drawContours(frame,contours,2,verde,-1,8,hierarchy);
-      bbox = boundingRect( Mat(contours[0]) );
-      tracker->update(frame, bbox);
-      rectangle(frame, bbox, azul, 2, 1 );
 
 			break;
 		}
