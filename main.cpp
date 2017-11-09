@@ -8,13 +8,14 @@
 
 
 #include <opencv2/opencv.hpp>
-#include <opencv2/tracking.hpp>
+//#include <opencv2/tracking.hpp>
 #include <iostream>
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 #include <string>
 #include <sstream>
+#include <time.h>
 
 namespace patch{
     template < typename T > std::string to_string( const T& n )
@@ -51,6 +52,7 @@ void locate(String &buff){
   in = exec("locate data/haarcascades/haarcascade_frontalface_alt.xml");
   buff = in;
 }
+
 
 void TSL (Mat& in, Mat& out){
 
@@ -173,7 +175,11 @@ void binarizar(Mat &in, Mat& out){
 
 	Mat element = getStructuringElement( 0,
 			Size( 2*3+ 1, 2*3+1 ),
-			Point( 3, 3) );
+			Point( 3, 3) );Mat kernel = (Mat_<int>(3, 3) <<
+        0, 1, 0,
+        1, -1, 1,
+        0, 1, 0);
+
 
 	Mat blured, hsv, balanceada;
 
@@ -199,36 +205,45 @@ void binarizar(Mat &in, Mat& out){
 	//imshow("V",channels[2]);
 }
 
-void tracking(Ptr<Tracker> trackerFace,Rect2d faceBox,Ptr<Tracker> trackerLeft,Rect2d leftBox,Ptr<Tracker> trackerRigth,Rect2d rigthBox ){
+//void tracking(Ptr<Tracker> trackerFace,Rect2d faceBox,Ptr<Tracker> trackerLeft,Rect2d leftBox,Ptr<Tracker> trackerRigth,Rect2d rigthBox ){
 
   //bbox = boundingRect( Mat(contours[0]) );
   //tracker->update(frame, bbox);
   //rectangle(frame, bbox, azul, 2, 1 );
 
-}
+//}
 
 int main( int argc, char** argv ){
+
+  time_t rawtime;
+struct tm * timeinfo;
+
+Mat kernel = (Mat_<int>(3, 3) <<
+        0, 1, 0,
+        1, -1, 1,
+        0, 1, 0);
+
 
   //VARIAVEIS
 	Scalar verde = Scalar(0,255,0);
 	Scalar azul = Scalar(255,0,0);
 	Scalar vermelho = Scalar(0,0,255);
 	CascadeClassifier face_cascade;
-  Mat frame,gray,bin,aux,hsv,blured;
+    Mat frame,gray,bin,aux,hsv,blured;
 	int cntr = 0;
-  unsigned int numeroPessoas;
-  String aux_string, localCascade;
+    unsigned int numeroPessoas;
+    String aux_string, localCascade;
 
 
-  Ptr<Tracker> trackerFace = Tracker::create( "MIL" );
-  Ptr<Tracker> trackerLeft = Tracker::create( "MIL" );
-  Ptr<Tracker> trackerRigth = Tracker::create( "MIL" );;
+//  Ptr<Tracker> trackerFace = Tracker::create( "MIL" );
+//  Ptr<Tracker> trackerLeft = Tracker::create( "MIL" );
+//  Ptr<Tracker> trackerRigth = Tracker::create( "MIL" );;
 
-  Rect2d faceBox,leftBox,rigthBox;
+//  Rect2d faceBox,leftBox,rigthBox;
 
-  trackerFace->init(frame, faceBox);
-  trackerLeft->init(frame,leftBox);
-  trackerRigth->init(frame,rigthBox);
+//  trackerFace->init(frame, faceBox);
+//  trackerLeft->init(frame,leftBox);
+//  trackerRigth->init(frame,rigthBox);
 
   //ACHA  PATH DO CASCADE
   locate(aux_string);
@@ -278,6 +293,11 @@ int main( int argc, char** argv ){
 
 		std::vector<std::vector<Point> > contours;
 		std::vector<Vec4i> hierarchy;
+    std::vector<Moments> mu(2);
+    std::vector<Point2f> mc(2);
+    std::vector<std::vector<Point> > hull(2);
+
+
 
 		findContours( bin, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
 
@@ -308,8 +328,34 @@ int main( int argc, char** argv ){
 			ellipse( frame, centerUnico, Size( faces[0].width*0.5, faces[0].height*0.5), 0, 0, 360, verde, 4, 8, 0 );
 
 
-			drawContours(frame,contours,0,verde,-1,8,hierarchy);
-			drawContours(frame,contours,2,verde,-1,8,hierarchy);
+      /*
+       PEGAR CENTRO DE MASSA
+       MAO DIREITA COR AZUL INDICE 0
+       MAO ESQUERDA COR VERMELHA INDICE 2
+      */
+
+      mu[0] = moments( contours[0], false );
+      mu[1] = moments( contours[2], false );
+      mc[0] = Point2f( mu[0].m10/mu[0].m00 , mu[0].m01/mu[0].m00 );
+      mc[1] = Point2f( mu[1].m10/mu[1].m00 , mu[1].m01/mu[1].m00 );
+
+    convexHull( Mat(contours[0]), hull[0], false );
+    convexHull( Mat(contours[2]), hull[1], false );
+
+//      morphologyEx(Mat(contours[0]), Mat(hull[0]), MORPH_HITMISS, kernel);
+//      morphologyEx(Mat(contours[2]), Mat(hull[1]), MORPH_HITMISS, kernel);
+
+//------------------------------------------------------------------------------
+	    drawContours(frame,contours,0,verde,-1,8,hierarchy);
+      circle( frame, mc[0], 8, azul, -1, 8, 0 );
+      drawContours( frame, hull, 0, azul, 1, 8, std::vector<Vec4i>(), 0, Point() );
+      drawContours(frame,contours,2,verde,-1,8,hierarchy);
+      circle( frame, mc[1], 8, vermelho, -1, 8, 0 );
+      drawContours( frame, hull, 1, azul, 1, 8, std::vector<Vec4i>(), 0, Point() );
+
+//      time ( &rawtime );
+//  timeinfo = localtime ( &rawtime );
+//  fprintf ( "%d    Data atual do sistema é: %s ",rawtime , asctime (timeinfo));
 
 			break;
 		}
