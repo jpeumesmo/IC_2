@@ -8,7 +8,7 @@
 
 
 #include <opencv2/opencv.hpp>
-//#include <opencv2/tracking.hpp>
+#include <opencv2/tracking.hpp>
 #include <iostream>
 #include <stdlib.h>
 #include <stdio.h>
@@ -186,17 +186,23 @@ void binarizar(Mat &in, Mat& out){
 
 
 	blur( in, blured, Size(13,13) );
+//  blur( in, blured, Size(7,7) );
+
 
 	//balancear(blured,balanceada,10);
 
 	//cvtColor(balanceada,hsv,CV_BGR2HSV);
 	cvtColor(blured, hsv, CV_BGR2HSV);
-	//balancear(hsv,balanceada,10);
+//	balancear(hsv,balanceada,10);
 	//cvtColor(in,hsv,CV_BGR2HSV);
 
-	inRange(hsv, Scalar(0, 40, 60), Scalar(15, 150, 255), out);
+//  inRange(balanceada, Scalar(0, 40, 60), Scalar(15, 150, 255), out);
 
-  //morphologyEx(out,out,1,element);
+	inRange(hsv, Scalar(0, 40, 60), Scalar(15, 150, 255), out);
+//  inRange(hsv, Scalar(0, 48, 80), Scalar(20, 255, 255), out);
+
+  morphologyEx(out,out,1,element);
+  //morphologyEx( out, out, MORPH_CLOSE, element );
 
 	//std::vector<Mat> channels;
 	//split(hsv,channels);
@@ -217,6 +223,10 @@ int main( int argc, char** argv ){
 
   time_t rawtime;
 struct tm * timeinfo;
+int flagTrack = 0;
+int exPtIniTrack,radiusIniTrack, eyPtIniTrack,contTrack =0;
+int dxPtIniTrack, dyPtIniTrack;
+int cont;
 
 Mat kernel = (Mat_<int>(3, 3) <<
         0, 1, 0,
@@ -235,13 +245,14 @@ Mat kernel = (Mat_<int>(3, 3) <<
     String aux_string, localCascade;
 
 
-//  Ptr<Tracker> trackerFace = Tracker::create( "MIL" );
-//  Ptr<Tracker> trackerLeft = Tracker::create( "MIL" );
-//  Ptr<Tracker> trackerRigth = Tracker::create( "MIL" );;
+//  Ptr<Tracker> trackerLeft = TrackerTLD::create();
+//  Ptr<Tracker> trackerRigth = TrackerTLD::create();
 
-//  Rect2d faceBox,leftBox,rigthBox;
+  Ptr<Tracker> trackerLeft = TrackerKCF::create();
+  Ptr<Tracker> trackerRigth = TrackerKCF::create();
 
-//  trackerFace->init(frame, faceBox);
+//  Rect2d leftBox,rigthBox;
+
 //  trackerLeft->init(frame,leftBox);
 //  trackerRigth->init(frame,rigthBox);
 
@@ -296,7 +307,8 @@ Mat kernel = (Mat_<int>(3, 3) <<
     std::vector<Moments> mu(2);
     std::vector<Point2f> mc(2);
     std::vector<std::vector<Point> > hull(2);
-
+    std::vector<std::vector<int> > hulli(2);
+    std::vector<std::vector<Vec4i> > defects(2);
 
 
 		findContours( bin, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
@@ -326,7 +338,16 @@ Mat kernel = (Mat_<int>(3, 3) <<
 
 			Point centerUnico( faces[0].x + faces[0].width*0.5, faces[0].y + faces[0].height*0.5 );
 			ellipse( frame, centerUnico, Size( faces[0].width*0.5, faces[0].height*0.5), 0, 0, 360, verde, 4, 8, 0 );
-
+      if (!flagTrack){
+        exPtIniTrack = faces[0].x - faces[0].width*0.5;
+        eyPtIniTrack = frame.size().height*0.2;
+        dxPtIniTrack = faces[0].x + faces[0].width*0.5;
+        dyPtIniTrack = frame.size().height*0.2;
+        radiusIniTrack = faces[0].width*0.25;
+        //Point diniciarTrack(faces[0].x+faces[0].width*0.2,frame.size().height*0.5 );
+        //Point einiciarTrack(faces[0].x+faces[0].width*0.2,frame.size().height*0.5 );
+        flagTrack = 1;
+      }
 
       /*
        PEGAR CENTRO DE MASSA
@@ -342,16 +363,115 @@ Mat kernel = (Mat_<int>(3, 3) <<
     convexHull( Mat(contours[0]), hull[0], false );
     convexHull( Mat(contours[2]), hull[1], false );
 
+    convexHull( Mat(contours[0]), hulli[0], false );
+    convexHull( Mat(contours[2]), hulli[1], false );
+
+
+    convexityDefects( Mat(contours[0]), hulli[0], defects[0] );
+    convexityDefects( Mat(contours[2]), hulli[1], defects[1] );
+
 //      morphologyEx(Mat(contours[0]), Mat(hull[0]), MORPH_HITMISS, kernel);
 //      morphologyEx(Mat(contours[2]), Mat(hull[1]), MORPH_HITMISS, kernel);
 
+//    Point diniciarTrack(faces[0].x - faces[0].width*0.5,dyPtIniTrack);
+//    circle(frame,diniciarTrack,radiusIniTrack,vermelho,1,8,0);
+//    Point einiciarTrack(faces[0].x + faces[0].width*1.5,eyPtIniTrack);
+//    circle(frame,einiciarTrack,radiusIniTrack,azul,1,8,0);
+
 //------------------------------------------------------------------------------
-	    drawContours(frame,contours,0,verde,-1,8,hierarchy);
+/*
+
+      drawContours(frame,contours,0,verde,-1,8,hierarchy);
+
       circle( frame, mc[0], 8, azul, -1, 8, 0 );
-      drawContours( frame, hull, 0, azul, 1, 8, std::vector<Vec4i>(), 0, Point() );
-      drawContours(frame,contours,2,verde,-1,8,hierarchy);
-      circle( frame, mc[1], 8, vermelho, -1, 8, 0 );
       drawContours( frame, hull, 1, azul, 1, 8, std::vector<Vec4i>(), 0, Point() );
+*/
+// std::cout <<hull[1].size() << "\t"<< defects[1][1].size() << '\n';
+//for (int k = 0; k < hull[1].size(); k++){
+          cont = 0;
+            for (int j = 0; j < defects[1].size(); j++){
+              if (defects[1][j][3] > 20 * 256 /*filter defects by depth*/){
+                int ind_0 = defects[1][j][0];//start point
+                int ind_1 = defects[1][j][1];//end point
+                int ind_2 = defects[1][j][2];//defect point
+                if (contours[2][ind_0].y < mc[1].y){
+                    cont++;
+                  circle(frame, contours[2][ind_0], 5, Scalar(0, 0, 255), -1);
+            //circle(frame, contours[2][ind_1], 5, Scalar(255, 0, 0), -1);
+                //    circle(frame, contours[2][ind_2], 5, Scalar(0, 255, 0), -1);
+                //    line(frame, contours[2][ind_2], contours[2][ind_0], Scalar(0, 255, 255), 1);
+                //    line(frame, contours[2][ind_2], contours[2][ind_1], Scalar(0, 255, 255), 1);
+
+                }
+              }
+            }
+            switch (cont) {
+              case 5:{
+                putText(frame,"5 dedos",Point(200,50),FONT_HERSHEY_SIMPLEX,1,vermelho,1,8);
+              }
+
+              break;
+
+              case 4:{
+                putText(frame,"4 dedos",Point(200,50),FONT_HERSHEY_SIMPLEX,1,vermelho,1,8);
+              }
+
+              break;
+
+              case 3:{
+                putText(frame,"3 dedos",Point(200,50),FONT_HERSHEY_SIMPLEX,1,vermelho,1,8);
+              }
+
+              break;
+
+              case 2:{
+                putText(frame,"2 dedos",Point(200,50),FONT_HERSHEY_SIMPLEX,1,vermelho,1,8);
+              }
+
+              break;
+
+              case 1:{
+                putText(frame,"1 dedo",Point(200,50),FONT_HERSHEY_SIMPLEX,1,vermelho,1,8);
+              }
+
+              break;
+
+              case 0:{
+                putText(frame,"Nenhum dedo",Point(200,50),FONT_HERSHEY_SIMPLEX,1,vermelho,1,8);
+              }
+
+              break;
+
+              default:{
+                break;
+              }
+            }
+  //        }
+/*
+      for (const Vec4i& v : defects[1]){
+        int startidx = v[0]; Point ptStart(contours[0][startidx]);
+        int endidx = v[1]; Point ptEnd(contours[0][endidx]);
+        int faridx = v[2]; Point ptFar(contours[0][faridx]);
+
+        line(frame,ptStart,ptEnd,vermelho,1);
+        line(frame,ptStart,ptFar,vermelho,1);
+        line(frame,ptEnd,ptFar,vermelho,1);
+        circle(frame,ptFar,4,vermelho,2);
+      }
+*/
+      //drawContours(frame,contours,2,verde,-1,8,hierarchy);
+      circle( frame, mc[1], 8, vermelho, -1, 8, 0 );
+      //if ( ((mc[1].x - dxiniciarTrack.x) * (mc[1].x - diniciarTrack.x)) + ((mc[1].y - diniciarTrack.y) * (mc[1].y - diniciarTrack.y)) < (radiusIniTrack * radiusIniTrack )
+      //    &&  ((mc[0].x - diniciarTrack.x) * (mc[0].x - diniciarTrack.x)) + ((mc[0].y - diniciarTrack.y) * (mc[0].y - diniciarTrack.y)) < (radiusIniTrack * radiusIniTrack )
+
+//    ){
+//        std::cout << contTrack << '\n';
+  //      contTrack++;
+  //      if (contTrack == 3){
+    //      std::cout << "tracking" << '\n';
+    //    }
+    //  }
+    //  drawContours( frame, hull, 1, azul, 1, 8, std::vector<Vec4i>(), 0, Point() );
 
 //      time ( &rawtime );
 //  timeinfo = localtime ( &rawtime );
@@ -359,58 +479,7 @@ Mat kernel = (Mat_<int>(3, 3) <<
 
 			break;
 		}
-		case(2):{
-			/*
-			 * Caso de 2 pessoas detectadas
-			 */
-			sort(faces.begin(), faces.end(), compareFacePosition);
-			sort(contours.begin(),contours.begin()+6,compareContourPosition);
 
-			//Maior rosto
-			Point center0( faces[0].x + faces[0].width*0.5, faces[0].y + faces[0].height*0.5 );
-			ellipse( frame, center0, Size( faces[0].width*0.5, faces[0].height*0.5), 0, 0, 360, verde, 4, 8, 0 );
-
-			drawContours(frame,contours,0,verde,-1,8,hierarchy);
-			drawContours(frame,contours,2,verde,-1,8,hierarchy);
-
-			//Menor rosto
-			Point center1( faces[1].x + faces[1].width*0.5, faces[1].y + faces[1].height*0.5 );
-			ellipse( frame, center1, Size( faces[1].width*0.5, faces[1].height*0.5), 0, 0, 360, azul, 4, 8, 0 );
-
-			drawContours(frame,contours,3,azul,-1,8,hierarchy);
-			drawContours(frame,contours,5,azul,-1,8,hierarchy);
-
-			break;
-		}
-		case(3):{
-			/*
-			 * Caso de 3 pessoas detectadas
-			 */
-			sort(faces.begin(), faces.end(), compareFacePosition);
-			sort(contours.begin(),contours.begin()+9,compareContourPosition);
-
-			//Maior rosto
-			Point center0( faces[0].x + faces[0].width*0.5, faces[0].y + faces[0].height*0.5 );
-			ellipse( frame, center0, Size( faces[0].width*0.5, faces[0].height*0.5), 0, 0, 360, verde, 4, 8, 0 );
-
-			drawContours(frame,contours,0,verde,-1,8,hierarchy);
-			drawContours(frame,contours,2,verde,-1,8,hierarchy);
-
-			//Medio rosto
-			Point center1( faces[1].x + faces[1].width*0.5, faces[1].y + faces[1].height*0.5 );
-			ellipse( frame, center1, Size( faces[1].width*0.5, faces[1].height*0.5), 0, 0, 360, azul, 4, 8, 0 );
-
-			drawContours(frame,contours,3,azul,-1,8,hierarchy);
-			drawContours(frame,contours,5,azul,-1,8,hierarchy);
-
-			//Maior rosto
-			Point center2( faces[2].x + faces[2].width*0.5, faces[2].y + faces[2].height*0.5 );
-			ellipse( frame, center2, Size( faces[2].width*0.5, faces[2].height*0.5), 0, 0, 360, vermelho, 4, 8, 0 );
-			drawContours(frame,contours,6,vermelho,-1,8,hierarchy);
-			drawContours(frame,contours,8,vermelho,-1,8,hierarchy);
-
-			break;
-		}
 		default:{
 			/*
 			 * Mais do que 3 pessoas detectadas
@@ -424,8 +493,8 @@ Mat kernel = (Mat_<int>(3, 3) <<
 		imshow("frame",frame);
 
 		cntr++;
-	//	imwrite("/home/jpeumesmo/workspace/Rosto/images/bin/"+patch::to_string(cntr)+".jpg",bin);
-	//	imwrite("/home/jpeumesmo/workspace/Rosto/images/frame/f"+patch::to_string(cntr)+".jpg",frame);
+		imwrite("/home/jpeumesmo/workspace/Rosto/images/bin/"+patch::to_string(cntr)+".jpg",bin);
+		imwrite("/home/jpeumesmo/workspace/IC/Rosto/images/frame/f"+patch::to_string(cntr)+".jpg",frame);
 
 		if(waitKey(30) >= 0) break;//QUEBRA LACO PRINCIPAL
 	}
